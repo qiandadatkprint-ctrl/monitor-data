@@ -3,284 +3,598 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企业监测报告智能提取系统</title>
-    <!-- 引入 PDF.js 用于前端处理 PDF -->
+    <title>监测报告数据排版与清洁生产计算工具</title>
+    <!-- 引入 PDF.js 用于前端逐页渲染 PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --border: #e2e8f0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 20px; background-color: var(--bg); height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .header h1 { margin: 0; font-size: 20px; color: #1e293b; }
-        
-        .controls { display: flex; gap: 15px; align-items: center; }
-        input[type="password"] { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; width: 250px; }
-        input[type="file"] { padding: 5px; }
-        button { background: var(--primary); color: white; border: none; padding: 9px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: background 0.2s; }
-        button:hover { background: #1d4ed8; }
-        button:disabled { background: #94a3b8; cursor: not-allowed; }
-        button.export-btn { background: #10b981; }
-        button.export-btn:hover { background: #059669; }
+        :root {
+            --primary-color: #0f766e; /* 深青色，适合环保/清洁生产主题 */
+            --primary-hover: #115e59;
+            --bg-color: #f0fdfa;
+            --panel-bg: #ffffff;
+            --border-color: #cbd5e1;
+            --text-color: #334155;
+        }
 
-        .main-container { display: flex; gap: 20px; flex: 1; min-height: 0; /* Important for flex child scrolling */ }
-        
-        /* 左侧 PDF 预览区 */
-        .left-panel { flex: 1; background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
-        .panel-header { background: #f1f5f9; padding: 10px 15px; font-weight: 600; border-bottom: 1px solid var(--border); color: #475569; }
-        #pdfViewer { flex: 1; width: 100%; border: none; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
 
-        /* 右侧 数据提取区 */
-        .right-panel { flex: 1; background: white; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); }
-        .table-container { flex: 1; overflow-y: auto; padding: 15px; }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid var(--border); padding: 12px; text-align: left; }
-        th { background-color: #f8fafc; color: #475569; position: sticky; top: 0; }
-        /* 可编辑单元格的样式 */
-        td[contenteditable="true"] { transition: background 0.2s; }
-        td[contenteditable="true"]:hover { background-color: #fef9c3; cursor: text; outline: 1px dashed #eab308; }
-        td[contenteditable="true"]:focus { background-color: #fef08a; outline: 2px solid #eab308; }
+        /* 顶部标题与工具栏 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--panel-bg);
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            color: #115e59;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .file-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="file"] {
+            font-size: 14px;
+        }
 
-        #statusText { margin-top: 10px; font-size: 14px; color: #0284c7; font-weight: 500; }
-        .hidden { display: none; }
+        /* 主体双面板布局 */
+        .main-layout {
+            display: flex;
+            gap: 15px;
+            flex: 1;
+            min-height: 0; /* 允许子元素内部滚动 */
+        }
+
+        /* 左侧：PDF 逐页显示区 */
+        .pdf-panel {
+            width: 45%;
+            background: #64748b; /* 灰色背景烘托PDF纸张 */
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .panel-title {
+            background: #1e293b;
+            color: white;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .pdf-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        /* PDF 页面画布样式 */
+        .pdf-page-canvas {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            background: white;
+            max-width: 100%;
+        }
+
+        /* 右侧：数据录入与计算区 */
+        .data-panel {
+            width: 55%;
+            background: var(--panel-bg);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+        .data-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        /* 文本粘贴区 */
+        .paste-box {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            resize: none;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        button:hover { background-color: var(--primary-hover); }
+        button.clear-btn { background-color: #ef4444; }
+        button.clear-btn:hover { background-color: #dc2626; }
+        button.export-btn { background-color: #059669; margin-left: auto;}
+        button.export-btn:hover { background-color: #10b981; }
+
+        /* 全局计算参数配置 */
+        .global-config {
+            background: #f8fafc;
+            border: 1px dashed var(--border-color);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            align-items: center;
+        }
+        .global-config input {
+            width: 80px;
+            padding: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        /* 可编辑表格样式 */
+        .table-wrapper {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f5f9;
+            color: #334155;
+            position: sticky;
+            top: 0;
+        }
+        td[contenteditable="true"] {
+            background-color: #fffdf5; /* 淡淡的黄色提示可编辑 */
+        }
+        td[contenteditable="true"]:focus {
+            background-color: #fef08a;
+            outline: 2px solid #eab308;
+        }
+        .add-row-btn {
+            background: none;
+            color: var(--primary-color);
+            border: 1px dashed var(--primary-color);
+            width: 100%;
+            padding: 6px;
+            margin-top: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .add-row-btn:hover { background: #f0fdfa; }
+
+        /* 提示词引导 */
+        .guide-text {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.5;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>📊 监测报告智能提取 (清洁生产)</h1>
-        <div class="controls">
-            <input type="password" id="apiKey" placeholder="输入大模型 API Key (如阿里DashScope)">
-            <input type="file" id="pdfInput" accept="application/pdf, image/*">
-            <button id="processBtn" onclick="processDocument()">自动提取数据</button>
-            <button class="export-btn" onclick="exportToCSV()">⬇️ 导出 CSV</button>
+        <h1>🌱 监测数据排版与清洁生产计算工具 (免API本地版)</h1>
+        <div class="file-selector">
+            <span style="font-size: 14px; font-weight: 500;">导入报告PDF:</span>
+            <input type="file" id="pdfInput" accept="application/pdf">
         </div>
     </div>
 
-    <div class="main-container">
-        <!-- 左侧：PDF 预览 -->
-        <div class="left-panel">
-            <div class="panel-header">📄 原文件预览</div>
-            <iframe id="pdfViewer" src=""></iframe>
+    <div class="main-layout">
+        <!-- 左侧：PDF 逐页长图渲染区 -->
+        <div class="pdf-panel">
+            <div class="panel-title">
+                <span>📄 PDF 原文逐页预览</span>
+                <span id="pageCount">未加载文件</span>
+            </div>
+            <div class="pdf-container" id="pdfContainer">
+                <div style="color: #cbd5e1; margin-top: 100px; text-align: center;">
+                    请在右上角选择并导入监测报告 PDF<br><br>
+                    导入后将在本地渲染成清晰长图，方便您肉眼核对数据
+                </div>
+            </div>
         </div>
 
-        <!-- 右侧：可编辑表格 -->
-        <div class="right-panel">
-            <div class="panel-header">
-                📝 提取结果 (点击单元格可直接修改)
-                <div id="statusText"></div>
+        <!-- 右侧：数据提取排版与智能计算区 -->
+        <div class="data-panel">
+            <div class="panel-title" style="background: #0f766e;">
+                <span>📝 数据自动排版与清洁生产物料衡算区</span>
             </div>
-            <div class="table-container">
-                <table id="resultTable">
-                    <thead>
-                        <tr>
-                            <th>监测位置/排口</th>
-                            <th>监测因子</th>
-                            <th>浓度/实测值</th>
-                            <th>单位</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                        <tr><td colspan="4" style="text-align: center; color: #94a3b8;">暂无数据，请上传报告并点击提取</td></tr>
-                    </tbody>
-                </table>
+            <div class="data-body">
+                <div>
+                    <label style="font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px;">
+                        第一步：将外部OCR软件扫描出来的文本粘贴在下方：
+                    </label>
+                    <textarea class="paste-box" id="rawTextarea" placeholder="请在这里粘贴外部OCR软件（如Umi-OCR、微信OCR）识别出来的多行文本或表格文字...&#10;支持直接粘贴从Excel里复制出来的行列数据。"></textarea>
+                    
+                    <div class="btn-group">
+                        <button onclick="smartParseText()">⚡ 智能排版解析</button>
+                        <button class="clear-btn" onclick="clearTable()">清空表格</button>
+                        <button class="export-btn" onclick="exportToCSV()">⬇️ 导出为计算 Excel (CSV)</button>
+                    </div>
+                    <div class="guide-text">
+                        💡 <b>智能解析原理：</b>系统会自动按行扫描，提取包含“COD、氨氮、总氮、总磷、颗粒物、非甲烷总烃”等核心因子、对应数值及单位。若行内有多个空格/制表符，系统将自动切分为独立单元格。
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+                <div>
+                    <label style="font-size: 14px; font-weight: bold; display: block; margin-bottom: 8px;">
+                        第二步：数据复核与清洁生产排污量联动计算
+                    </label>
+                    
+                    <!-- 快捷配置默认计算参数 -->
+                    <div class="global-config">
+                        <span><b>⚡ 快捷填充默认参数:</b></span>
+                        <label>默认流量 (m³/h): <input type="number" id="defaultFlow" value="1000" oninput="applyDefaultParams()"></label>
+                        <label>默认运行时间 (h/a): <input type="number" id="defaultHours" value="2400" oninput="applyDefaultParams()"></label>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table id="calculationTable">
+                            <thead>
+                                <tr>
+                                    <th width="20%">监测位置/排口</th>
+                                    <th width="15%">监测因子</th>
+                                    <th width="12%">实测浓度值</th>
+                                    <th width="10%">单位</th>
+                                    <th width="13%">废气/水量<br>(m³/h)</th>
+                                    <th width="12%">年运行时间<br>(h/a)</th>
+                                    <th width="18%">年排放量估算<br><b>(吨/年, t/a)</b></th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- 解析后的数据行会插入到这里 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="add-row-btn" onclick="addNewRow()">＋ 手动增加一行</button>
+                    <div class="guide-text" style="margin-top: 8px; color: #0284c7;">
+                        📝 <b>操作小贴士：</b><br>
+                        1. 带有淡黄色背景的单元格<b>支持直接点击并修改内容</b>。<br>
+                        2. 修改任一行的“浓度”、“废气/水量”或“运行时间”后，<b>年排放量会自动实时重新计算</b>。<br>
+                        3. <b>年排放量计算公式：</b> 浓度(mg/m³ 或 mg/L) &times; 流量(m³/h) &times; 时间(h/a) &divide; 1,000,000,000
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 配置 PDF.js worker
+        // 配置 PDF.js 的 Worker 路径
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
         const pdfInput = document.getElementById('pdfInput');
-        const pdfViewer = document.getElementById('pdfViewer');
+        const pdfContainer = document.getElementById('pdfContainer');
+        const pageCountSpan = document.getElementById('pageCount');
         const tableBody = document.getElementById('tableBody');
-        const statusText = document.getElementById('statusText');
-        const processBtn = document.getElementById('processBtn');
 
-        // 监听文件上传，渲染到左侧 Iframe
+        // ==================== 1. PDF 逐页本地渲染逻辑 ====================
         pdfInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (file) {
-                const fileURL = URL.createObjectURL(file);
-                pdfViewer.src = fileURL;
+            if (!file || file.type !== 'application/pdf') {
+                alert('请选择有效的 PDF 文件！');
+                return;
             }
-        });
 
-        // 主处理流程
-        async function processDocument() {
-            const apiKey = document.getElementById('apiKey').value;
-            const file = pdfInput.files[0];
+            pdfContainer.innerHTML = '<div style="color:white;text-align:center;margin-top:50px;">⏳ 正在本地绘制 PDF 页面，请稍候...</div>';
+            pageCountSpan.innerText = '正在加载...';
 
-            if (!apiKey) { alert("请先填写 API Key！"); return; }
-            if (!file) { alert("请先选择 PDF 或图片文件！"); return; }
-
-            processBtn.disabled = true;
-            tableBody.innerHTML = ''; // 清空表格
-            
-            try {
-                if (file.type === 'application/pdf') {
-                    await processPDF(file, apiKey);
-                } else if (file.type.startsWith('image/')) {
-                    const base64 = await fileToBase64(file);
-                    await callVisionAPI(base64, apiKey, 1, 1);
-                } else {
-                    alert("不支持的文件类型！");
-                }
-                statusText.innerText = "✅ 提取完成！请核对并在表格中直接修改修正。";
-                statusText.style.color = "#10b981";
-            } catch (error) {
-                console.error(error);
-                statusText.innerText = "❌ 发生错误: " + error.message;
-                statusText.style.color = "#ef4444";
-            } finally {
-                processBtn.disabled = false;
-            }
-        }
-
-        // 处理 PDF：逐页转成图片并调用 API
-        async function processPDF(file, apiKey) {
             const fileURL = URL.createObjectURL(file);
             const loadingTask = pdfjsLib.getDocument(fileURL);
-            const pdf = await loadingTask.promise;
-            const totalPages = pdf.numPages;
-
-            // 监测报告通常在中间页，这里为了演示遍历所有页
-            // 如果为了省 API 费用，可以限制只处理前 X 页，或者让用户输入页码
-            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                statusText.innerText = `⏳ 正在解析 PDF... 第 ${pageNum} / ${totalPages} 页`;
-                
-                const page = await pdf.getPage(pageNum);
-                const viewport = page.getViewport({ scale: 2.0 }); // 放大 2 倍保证清晰度
-                
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-
-                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
-                
-                // 将 Canvas 转为 Base64 JPEG
-                const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-                
-                statusText.innerText = `🧠 正在呼叫大模型提取 第 ${pageNum} / ${totalPages} 页数据...`;
-                await callVisionAPI(base64Image, apiKey, pageNum, totalPages);
-            }
-        }
-
-        // 调用视觉大模型 API
-        async function callVisionAPI(base64Image, apiKey, currentPage, totalPages) {
-            // 这里以通义千问 API 为例（兼容 OpenAI 格式）
-            const apiUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions";
             
-            const prompt = `你是一个专业的环境工程清洁生产审核员。请分析这张监测报告的图片。
-如果图片中存在环境监测数据表格（如废气、废水、噪声），请提取。
-如果没有监测数据，请返回空数组 []。
-必须提取：排口名称/位置、监测因子（如COD、氨氮、非甲烷总烃等）、实测浓度值、单位。
-排除掉质控样、空白样，只保留实际样品的检测结果。
-请严格按照以下 JSON 数组格式返回，不要加任何 markdown 标记：
-[{"location": "DA001排气筒", "factor": "非甲烷总烃", "value": "15.2", "unit": "mg/m3"}]`;
+            loadingTask.promise.then(async function(pdf) {
+                const totalPages = pdf.numPages;
+                pageCountSpan.innerText = `共 ${totalPages} 页`;
+                pdfContainer.innerHTML = ''; // 清空提示
 
-            const payload = {
-                model: "qwen-vl-plus", 
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: prompt },
-                            { type: "image_url", image_url: { url: base64Image } }
-                        ]
+                // 循环渲染每一页，实现长图垂直显示
+                for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    
+                    // 为了保证肉眼对数足够清晰，放大 1.8 倍渲染
+                    const viewport = page.getViewport({ scale: 1.8 });
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'pdf-page-canvas';
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    // 渲染到画布
+                    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                    
+                    // 为每页加上页码角标提示
+                    const pageWrapper = document.createElement('div');
+                    pageWrapper.style.position = 'relative';
+                    pageWrapper.style.width = '100%';
+                    pageWrapper.style.display = 'flex';
+                    pageWrapper.style.justifyContent = 'center';
+                    
+                    const pageBadge = document.createElement('div');
+                    pageBadge.innerText = `第 ${pageNum} 页`;
+                    pageBadge.style.position = 'absolute';
+                    pageBadge.style.top = '5px';
+                    pageBadge.style.left = '5px';
+                    pageBadge.style.background = 'rgba(0,0,0,0.6)';
+                    pageBadge.style.color = 'white';
+                    pageBadge.style.padding = '2px 6px';
+                    pageBadge.style.borderRadius = '3px';
+                    pageBadge.style.fontSize = '11px';
+
+                    pageWrapper.appendChild(pageBadge);
+                    pageWrapper.appendChild(canvas);
+                    pdfContainer.appendChild(pageWrapper);
+                }
+            }).catch(err => {
+                console.error(err);
+                pdfContainer.innerHTML = `<div style="color:#ef4444;text-align:center;margin-top:50px;">❌ PDF渲染失败: ${err.message}</div>`;
+            });
+        });
+
+        // ==================== 2. 外部OCR文本智能排版解析逻辑 ====================
+        function smartParseText() {
+            const rawText = document.getElementById('rawTextarea').value.trim();
+            if (!rawText) {
+                alert('请先在输入框中粘贴OCR识别出的文本！');
+                return;
+            }
+
+            const lines = rawText.split('
+');
+            let parsedRows = [];
+
+            // 常见的环境因子关键词，用于模糊匹配
+            const factorKeywords = ['化学需氧量', 'COD', '氨氮', '总氮', '总磷', '悬浮物', 'SS', '二氧化硫', 'SO2', '氮氧化物', 'NOx', '颗粒物', '烟尘', '非甲烷总烃', 'VOC', '烟气流速', '噪声', 'pH'];
+            // 常见的环境单位
+            const unitKeywords = ['mg/L', 'mg/m3', 'mg/m³', 'g/t', 'dB', '无量纲', '℃', 'm/s'];
+
+            lines.forEach(line => {
+                let trimmedLine = line.trim();
+                if (!trimmedLine) return;
+
+                // 方案 A：如果是从 Excel 或者结构化表格直接复制出来的，通常以制表符 	 或 连续空格 分隔
+                if (trimmedLine.includes('	') || /\s{2,}/.test(trimmedLine)) {
+                    let parts = trimmedLine.split(/	|\s{2,}/);
+                    if (parts.length >= 2) {
+                        let location = parts[0] || '未定排口';
+                        let factor = parts[1] || '-';
+                        let value = parts[2] || '0';
+                        let unit = parts[3] || 'mg/m3';
+                        
+                        // 简单校准：如果第3部分不是数字，尝试自动挪移
+                        if (isNaN(parseFloat(value.replace('<', '')))) {
+                            // 遍历寻找数字
+                            let foundValue = parts.find(p => !isNaN(parseFloat(p.replace('<', ''))));
+                            if (foundValue) value = foundValue;
+                        }
+                        
+                        parsedRows.push({ location, factor, value, unit });
+                        return;
                     }
-                ],
-                temperature: 0.1
-            };
+                }
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+                // 方案 B：如果是常规的多行 OCR 流式文本，利用正则和小波搜索匹配
+                let foundFactor = '-';
+                let foundValue = '';
+                let foundUnit = 'mg/m3';
+
+                // 1. 匹配因子
+                for (let kw of factorKeywords) {
+                    if (trimmedLine.toUpperCase().includes(kw.toUpperCase())) {
+                        foundFactor = kw;
+                        break;
+                    }
+                }
+
+                // 2. 匹配数值（支持含有小于号的检出限，如 <0.05 或 24.5）
+                let valueRegex = /(<|≤)?\d+(\.\d+)?/;
+                let matchValue = trimmedLine.match(valueRegex);
+                if (matchValue) {
+                    foundValue = matchValue[0];
+                }
+
+                // 3. 匹配单位
+                for (let un of unitKeywords) {
+                    if (trimmedLine.toLowerCase().includes(un.toLowerCase())) {
+                        foundUnit = un;
+                        break;
+                    }
+                }
+
+                // 如果因子和数值同时找到了，说明大概率是一条有效监测数据
+                if (foundFactor !== '-' && foundValue !== '') {
+                    parsedRows.push({
+                        location: '标准排口(需核对)',
+                        factor: foundFactor,
+                        value: foundValue,
+                        unit: foundUnit
+                    });
+                }
             });
 
-            if (!response.ok) {
-                throw new Error(`API 请求失败: ${response.status}`);
+            if (parsedRows.length === 0) {
+                alert('系统尝试了排班解析，未发现明显符合“因子+数值”结构的行。已为您添加一行空行，您可以手动录入，或检查OCR文本格式。');
+                addNewRow();
+                return;
             }
 
-            const data = await response.json();
-            let content = data.choices[0].message.content;
-            
-            // 清理可能包含的 Markdown JSON 代码块标记
-            content = content.replace(/```json/g, '').replace(/
-```/g, '').trim();
-            
-            try {
-                const results = JSON.parse(content);
-                if (results && results.length > 0) {
-                    appendDataToTable(results);
-                }
-            } catch (e) {
-                console.log("此页未检测到有效 JSON，可能是非数据页", content);
-            }
-        }
-
-        // 将数据追加到右侧表格中
-        function appendDataToTable(dataArray) {
-            // 如果是第一条数据，先清空占位符
-            if (tableBody.innerHTML.includes("暂无数据")) {
+            // 渲染到前端表格中
+            if (tableBody.innerHTML.includes("暂无数据") || tableBody.innerHTML.includes("请选择文件")) {
                 tableBody.innerHTML = '';
             }
 
-            dataArray.forEach(item => {
-                const tr = document.createElement('tr');
-                // contenteditable="true" 让单元格可以直接被点击编辑
-                tr.innerHTML = `
-                    <td contenteditable="true">${item.location || '-'}</td>
-                    <td contenteditable="true">${item.factor || '-'}</td>
-                    <td contenteditable="true">${item.value || '-'}</td>
-                    <td contenteditable="true">${item.unit || '-'}</td>
-                `;
-                tableBody.appendChild(tr);
+            const defFlow = document.getElementById('defaultFlow').value || 1000;
+            const defHours = document.getElementById('defaultHours').value || 2400;
+
+            parsedRows.forEach(data => {
+                createTableRow(data.location, data.factor, data.value, data.unit, defFlow, defHours);
             });
         }
 
-        // 导出表格为 CSV 功能
+        // 创建并插入单行表格 DOM
+        function createTableRow(loc, fac, val, un, flow, hours) {
+            const tr = document.createElement('tr');
+            
+            // 计算初始年排放量
+            const emissions = calculateEmissions(val, flow, hours);
+
+            tr.innerHTML = `
+                <td contenteditable="true" onblur="reCalculateRow(this)">${loc}</td>
+                <td contenteditable="true" onblur="reCalculateRow(this)">${fac}</td>
+                <td contenteditable="true" onblur="reCalculateRow(this)">${val}</td>
+                <td contenteditable="true" onblur="reCalculateRow(this)">${un}</td>
+                <td contenteditable="true" onblur="reCalculateRow(this)">${flow}</td>
+                <td contenteditable="true" onblur="reCalculateRow(this)">${hours}</td>
+                <td style="font-weight: bold; color: #0f766e; background-color: #f8fafc;">${emissions}</td>
+            `;
+            tableBody.appendChild(tr);
+        }
+
+        // ==================== 3. 清洁生产核心：实时动态计算逻辑 ====================
+        // 计算公式：浓度 * 流量 * 时间 / 10^9
+        function calculateEmissions(valStr, flowStr, hoursStr) {
+            // 清理数值中的小于号 "<0.05" -> 0.05
+            let val = parseFloat(valStr.replace('<', '').replace('≤', ''));
+            let flow = parseFloat(flowStr);
+            let hours = parseFloat(hoursStr);
+
+            if (isNaN(val) || isNaN(flow) || isNaN(hours)) {
+                return '-';
+            }
+
+            // 计算结果（吨/年）
+            let res = (val * flow * hours) / 1000000000;
+            
+            // 智能保留有效小数位数
+            if (res === 0) return '0';
+            return res < 0.001 ? res.toFixed(6) : res.toFixed(4);
+        }
+
+        // 当用户编辑表格完离开焦点后，重新计算该行排污量
+        function reCalculateRow(cellElement) {
+            const tr = cellElement.parentElement;
+            const valStr = tr.cells[2].innerText.trim();
+            const flowStr = tr.cells[4].innerText.trim();
+            const hoursStr = tr.cells[5].innerText.trim();
+
+            const newEmissions = calculateEmissions(valStr, flowStr, hoursStr);
+            tr.cells[6].innerText = newEmissions;
+        }
+
+        // 快捷批量填充参数功能
+        function applyDefaultParams() {
+            const defFlow = document.getElementById('defaultFlow').value || 1000;
+            const defHours = document.getElementById('defaultHours').value || 2400;
+            const rows = tableBody.querySelectorAll('tr');
+
+            rows.forEach(tr => {
+                if(tr.cells.length >= 7) {
+                    tr.cells[4].innerText = defFlow;
+                    tr.cells[5].innerText = defHours;
+                    const valStr = tr.cells[2].innerText.trim();
+                    tr.cells[6].innerText = calculateEmissions(valStr, defFlow, defHours);
+                }
+            });
+        }
+
+        // 手动添加一行
+        function addNewRow() {
+            if (tableBody.innerHTML.includes("暂无数据")) {
+                tableBody.innerHTML = '';
+            }
+            const defFlow = document.getElementById('defaultFlow').value || 1000;
+            const defHours = document.getElementById('defaultHours').value || 2400;
+            createTableRow('新排口位置', '新因子', '0', 'mg/m3', defFlow, defHours);
+        }
+
+        // 清空表格
+        function clearTable() {
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94a3b8;">暂无数据，请在上方粘贴文本并解析</td></tr>';
+        }
+
+        // ==================== 4. 导出为 CSV (Excel 直接兼容) ====================
         function exportToCSV() {
-            const rows = document.querySelectorAll("#resultTable tr");
+            const rows = document.querySelectorAll("#calculationTable tr");
             let csv = [];
+            
             for (let i = 0; i < rows.length; i++) {
                 let row = [], cols = rows[i].querySelectorAll("td, th");
                 for (let j = 0; j < cols.length; j++) {
-                    // 处理可能包含逗号的文本内容
-                    let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
+                    let data = cols[j].innerText.replace(/(
+|
+|
+)/gm, "").trim();
                     row.push('"' + data + '"');
                 }
                 csv.push(row.join(","));
             }
             
-            // 加上 BOM 头，防止 Excel 打开中文乱码
-            const csvString = "\uFEFF" + csv.join("\n");
+            // 加上 0xEF, 0xBB, 0xBF (BOM) 防止 Excel 识别中文产生乱码
+            const csvString = "﻿" + csv.join("
+");
             const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
+            
             link.setAttribute("href", url);
-            link.setAttribute("download", "监测数据提取结果.csv");
+            link.setAttribute("download", "清洁生产监测数据排版与计算结果.csv");
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // 辅助函数：File 转 Base64
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-        }
+        // 初始化占位行
+        clearTable();
     </script>
 </body>
 </html>
