@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企业排污许可与监测报告全自动解析系统</title>
+    <title>环保监测全自动化录入中台</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <style>
         :root { --primary: #0f766e; --bg: #f8fafc; --border: #cbd5e1; --text: #334155; --danger: #ef4444; --success: #10b981; --locked: #94a3b8; --progress: #0ea5e9;}
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; }
         
-        /* 顶部导航 */
         .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
         .header-title { font-size: 18px; font-weight: bold; color: var(--primary); margin: 0; }
         
@@ -20,7 +19,7 @@
 
         .main { display: flex; gap: 10px; flex: 1; min-height: 0; }
         
-        /* 左侧面板 & 进度条 */
+        /* 左侧面板 */
         .left-panel { width: 40%; background: white; border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; position: relative;}
         .upload-area { padding: 15px; border-bottom: 1px solid var(--border); background: #f8fafc;}
         .upload-btn-group { display: flex; gap: 10px; margin-bottom: 10px;}
@@ -32,10 +31,10 @@
         select { flex: 1; padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; outline: none;}
         iframe { flex: 1; border: none; width: 100%; background: #64748b; }
         
-        /* OCR 进度遮罩层 */
-        .progress-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.9); color: white; padding: 15px; box-sizing: border-box; display: none; flex-direction: column; gap: 8px; z-index: 50;}
+        /* 进度条 */
+        .progress-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.95); color: white; padding: 15px; box-sizing: border-box; display: none; flex-direction: column; gap: 8px; z-index: 50;}
         .progress-bar-bg { width: 100%; height: 6px; background: #334155; border-radius: 3px; overflow: hidden;}
-        .progress-bar-fill { height: 100%; background: var(--progress); width: 0%; transition: 0.3s; }
+        .progress-bar-fill { height: 100%; background: var(--progress); width: 0%; transition: 0.2s; }
         .progress-text { font-size: 12px; font-family: monospace; display: flex; justify-content: space-between;}
 
         /* 右侧面板 */
@@ -46,19 +45,26 @@
         .tab-content { flex: 1; overflow-y: auto; padding: 20px; display: none; }
         .tab-content.active { display: block; }
 
-        .section-title { font-size: 15px; font-weight: bold; margin: 0 0 12px 0; border-left: 4px solid var(--primary); padding-left: 10px;}
-        .table-wrap { overflow-x: auto; margin-bottom: 30px; border-radius: 6px; border: 1px solid var(--border);}
+        .section-title { font-size: 14px; font-weight: bold; margin: 0 0 12px 0; border-left: 4px solid var(--primary); padding-left: 10px; color: #1e293b; display: flex; justify-content: space-between; align-items: center;}
+        .table-wrap { overflow-x: auto; margin-bottom: 25px; border-radius: 6px; border: 1px solid var(--border);}
         table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
-        th, td { border: 1px solid var(--border); padding: 8px 6px; }
-        th { background: #f8fafc; font-weight: bold; position: sticky; top: 0;}
-        td[contenteditable="true"] { background: #fffdf5; transition: 0.2s; outline: none; border: 1px solid #e2e8f0;}
+        th, td { border: 1px solid var(--border); padding: 8px 4px; }
+        th { background: #f8fafc; font-weight: bold;}
+        td[contenteditable="true"] { background: #fffdf5; transition: 0.2s; outline: none;}
         td[contenteditable="true"]:focus { background: #fef08a; box-shadow: inset 0 0 0 2px #eab308; }
-        .empty-state { text-align: center; color: #94a3b8; padding: 40px 20px; font-size: 14px; background: #f8fafc; border: 1px dashed var(--border);}
         
+        .empty-state { text-align: center; color: #94a3b8; padding: 40px 20px; font-size: 13px; background: #f8fafc; border-radius: 6px; border: 1px dashed var(--border);}
         .limit-cell { color: var(--primary); font-weight: bold; }
         .non-compliant { color: white; background-color: var(--danger) !important; font-weight: bold; }
-        .auto-filled { animation: flashGreen 1.5s ease-out; }
+        .auto-filled { animation: flashGreen 2s ease-out; background-color: #e6f4ea; }
         @keyframes flashGreen { 0% { background-color: #a7f3d0; } 100% { background-color: #fffdf5; } }
+        
+        /* 操作按钮 */
+        .action-btn { background: #f1f5f9; color: var(--primary); border: 1px dashed var(--primary); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;}
+        .action-btn:hover { background: #e0f2fe; }
+        .del-btn { color: var(--danger); cursor: pointer; font-weight: bold; font-size: 16px; user-select: none;}
+        .del-btn:hover { transform: scale(1.2); }
+        select.inline-sel { border: none; background: transparent; font-size: 13px; outline: none; cursor: pointer; text-align: center; font-weight: bold; color: var(--primary);}
     </style>
 </head>
 <body>
@@ -67,8 +73,8 @@
         <h1 class="header-title">📊 环保监测全自动化录入中台</h1>
         <div class="step-container">
             <div class="step active" id="step1">① 导入排污许可证</div>
-            <div class="step" id="step2">② 批量分析监测报告</div>
-            <div class="step" id="step3">③ 数据复核</div>
+            <div class="step" id="step2">② 补充骨架与批量分析</div>
+            <div class="step" id="step3">③ 监测数据复核</div>
         </div>
     </div>
 
@@ -76,14 +82,14 @@
         <div class="left-panel">
             <div class="upload-area">
                 <div class="upload-btn-group">
-                    <label class="btn" for="permitInput" id="permitBtn">1. 上传并解析排污许可证</label>
+                    <label class="btn" for="permitInput" id="permitBtn">1. 上传排污许可证</label>
                     <input type="file" id="permitInput" accept="application/pdf">
                     
                     <label class="btn btn-disabled" id="reportBtn" for="reportInput">2. 批量上传监测报告</label>
                     <input type="file" id="reportInput" accept="application/pdf" multiple disabled>
                 </div>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                    <span style="font-size: 12px; font-weight: bold; color: #64748b;">原文阅览:</span>
+                    <span style="font-size: 12px; font-weight: bold; color: #64748b;">原文比对:</span>
                     <select id="pdfSelector" onchange="switchPDF()"><option value="">-- 等待文件导入 --</option></select>
                 </div>
             </div>
@@ -91,49 +97,50 @@
             
             <div class="progress-overlay" id="ocrProgress">
                 <div class="progress-text">
-                    <span id="progressTitle" style="font-weight: bold; color: #38bdf8;">正在唤醒 OCR 引擎...</span>
+                    <span id="progressTitle" style="font-weight: bold; color: #38bdf8;">正在初始化本地解析引擎...</span>
                     <span id="progressCount">0 / 0 页</span>
                 </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" id="progressBarFill"></div>
-                </div>
-                <span id="progressLog" style="font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">等待处理...</span>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBarFill"></div></div>
+                <span id="progressLog" style="font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">等待队列运行...</span>
             </div>
         </div>
 
         <div class="right-panel">
             <div class="tabs">
-                <div class="tab active" onclick="switchTab('tab-permit')">📋 排污许可台账</div>
-                <div class="tab" onclick="switchTab('tab-source')">📚 数据来源表</div>
+                <div class="tab active" onclick="switchTab('tab-permit')">📋 排污许可台账 (骨架设定)</div>
+                <div class="tab" onclick="switchTab('tab-source')">📚 报告来源表</div>
                 <div class="tab" onclick="switchTab('tab-gas')">💨 废气汇总</div>
                 <div class="tab" onclick="switchTab('tab-water')">💧 废水汇总</div>
                 <div class="tab" onclick="switchTab('tab-noise')">🔊 噪声汇总</div>
             </div>
 
             <div id="tab-permit" class="tab-content active">
-                <div id="permitContent"><div class="empty-state">等待全量解析《排污许可证》...<br>系统将自动提取标准限值与频次</div></div>
+                <div id="permitContent">
+                    <div class="empty-state">请在左侧上传《排污许可证》。<br>系统将尽力提取标准限值，<b>提取完毕后请务必核对并补全漏掉的污染因子。</b></div>
+                </div>
             </div>
+
             <div id="tab-source" class="tab-content">
-                <div class="section-title">报告来源自动提取台账</div>
+                <div class="section-title">监测数据来源自动提取台账</div>
                 <div class="table-wrap">
                     <table id="sourceTable">
-                        <thead><tr><th>年份</th><th>报告属性</th><th>监测单位</th><th>签发日期</th><th>报告编号</th></tr></thead>
-                        <tbody id="sourceBody"><tr><td colspan="5" class="empty-state" style="border:none;">暂无数据</td></tr></tbody>
+                        <thead><tr><th>年份</th><th>监测单位</th><th>签发日期</th><th>报告编号</th></tr></thead>
+                        <tbody id="sourceBody"><tr><td colspan="4" class="empty-state" style="border:none;">暂无关联报告数据</td></tr></tbody>
                     </table>
                 </div>
             </div>
-            <div id="tab-gas" class="tab-content"><div id="gasContent"><div class="empty-state">等待系统自动填表...</div></div></div>
-            <div id="tab-water" class="tab-content"><div id="waterContent"><div class="empty-state">等待系统自动填表...</div></div></div>
-            <div id="tab-noise" class="tab-content"><div id="noiseContent"><div class="empty-state">等待系统自动填表...</div></div></div>
+            
+            <div id="tab-gas" class="tab-content"><div id="gasContent"><div class="empty-state">请先补全骨架并导入监测报告...</div></div></div>
+            <div id="tab-water" class="tab-content"><div id="waterContent"><div class="empty-state">请先补全骨架并导入监测报告...</div></div></div>
+            <div id="tab-noise" class="tab-content"><div id="noiseContent"><div class="empty-state">请先补全骨架并导入监测报告...</div></div></div>
         </div>
     </div>
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
-        // ================= 1. 全局状态机 =================
+        // ================= 1. 全局持久化状态层 =================
         const state = {
-            isPermitLoaded: false,
             pdfs: [],
             permitParams: { standards: [], frequencies: [] },
             reports: [], 
@@ -141,19 +148,19 @@
             monitoringData: { gas: {}, water: {}, noise: {} }
         };
 
-        const envDict = {
+        const dicts = {
             water: ['COD', '化学需氧量', '氨氮', '总氮', '总磷', '悬浮物', 'SS', 'pH', '总锡', '总铜', '五日生化需氧量', 'BOD5', '动植物油'],
-            gas: ['非甲烷总烃', '颗粒物', '二氧化硫', '氮氧化物', '硫酸雾', 'VOC', '臭气浓度'],
-            noise: ['昼间', '夜间', '厂界噪声']
+            gas: ['非甲烷总烃', '颗粒物', '二氧化硫', '氮氧化物', '硫酸雾', 'VOC', '臭气'],
+            noise: ['昼间', '夜间', '噪声']
         };
 
-        // ================= 2. UI 交互基建 =================
+        // ================= 2. 基础 UI =================
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById(tabId).classList.add('active');
-            if (['tab-gas', 'tab-water', 'tab-noise'].includes(tabId)) renderAllMonitoringTables();
+            if (['tab-gas', 'tab-water', 'tab-noise'].includes(tabId)) renderMonitoringTables();
         }
 
         function updateStep(stepNum) {
@@ -162,7 +169,8 @@
             document.getElementById('step3').className = 'step ' + (stepNum >= 3 ? 'active' : '');
             if(stepNum >= 2) {
                 const btn = document.getElementById('reportBtn');
-                btn.classList.remove('btn-disabled'); document.getElementById('reportInput').disabled = false;
+                btn.classList.remove('btn-disabled'); 
+                document.getElementById('reportInput').disabled = false;
             }
         }
 
@@ -176,7 +184,7 @@
         }
         window.switchPDF = function() { document.getElementById('pdfViewer').src = document.getElementById('pdfSelector').value; };
 
-        // ================= 3. 核心引擎：全量转图 + Umi-OCR =================
+        // ================= 3. 高清渲染与后台 OCR 引擎 =================
         async function fullTextOcrProcess(file) {
             const overlay = document.getElementById('ocrProgress');
             const fill = document.getElementById('progressBarFill');
@@ -184,7 +192,7 @@
             const logText = document.getElementById('progressLog');
             
             overlay.style.display = 'flex';
-            document.getElementById('progressTitle').innerText = `正在全量解析: ${file.name}`;
+            document.getElementById('progressTitle').innerText = `正在分析: ${file.name}`;
             fill.style.width = '0%';
             
             let fullText = "";
@@ -196,16 +204,15 @@
                 for (let i = 1; i <= totalPages; i++) {
                     countText.innerText = `${i} / ${totalPages} 页`;
                     fill.style.width = `${(i / totalPages) * 100}%`;
-                    logText.innerText = `正在渲染第 ${i} 页画面...`;
+                    logText.innerText = `正在提取第 ${i} 页数据...`;
 
                     const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 2.0 }); // 高清渲染保证识别率
+                    const viewport = page.getViewport({ scale: 1.5 }); 
                     const canvas = document.createElement('canvas');
                     canvas.width = viewport.width; canvas.height = viewport.height;
                     await page.render({ canvasContext: canvas.getContext('2d'), viewport: viewport }).promise;
                     
                     const base64Data = canvas.toDataURL('image/jpeg', 0.8).replace(/^data:image\/jpeg;base64,/, "");
-                    logText.innerText = `正在呼叫 Umi-OCR 识别第 ${i} 页文字...`;
                     
                     const response = await fetch('http://127.0.0.1:1224/api/ocr', {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -215,94 +222,128 @@
                     if (response.ok) {
                         const result = await response.json();
                         if (result.code === 100 && result.data) {
-                            fullText += result.data.map(item => item.text).join('\n') + "\n\n";
+                            fullText += result.data.map(item => item.text).join('\n') + "\n";
                         }
                     }
                 }
-                logText.innerText = "✅ 全文提取完毕，正在结构化分析...";
-                await new Promise(r => setTimeout(r, 500)); // 缓冲视觉
+                logText.innerText = "提取完成，正在解析数据结构...";
+                await new Promise(r => setTimeout(r, 300));
             } catch (err) {
                 console.error(err);
-                alert("OCR 请求失败，请检查文件或 Umi-OCR 软件是否已开启服务！");
+                alert("无法连接到 Umi-OCR，请确保软件在后台运行并开启了HTTP API(端口1224)！");
             } finally {
                 overlay.style.display = 'none';
             }
             return fullText;
         }
 
-        // ================= 4. 业务一：排污许可智能解析 =================
+        // ================= 4. 排污许可解析与【骨架自定义功能】 =================
         document.getElementById('permitInput').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if(!file) return;
             addPDFToViewer(file);
-            
-            // 启动全量OCR
             const permitText = await fullTextOcrProcess(file);
             
-            // 启发式正则提取标准限值 (基于全国普遍排版规则)
             state.permitParams.standards = [];
             state.permitParams.frequencies = [];
 
-            // 智能分析因子
-            const parseEnvFactor = (category, keywords, defaultUnit) => {
-                keywords.forEach(kw => {
-                    // 寻找 "因子名称 .... 数字" 的模式
-                    const reg = new RegExp(`${kw}[^\\n]*?([\\d\\.]+)`);
-                    const match = permitText.match(reg);
-                    if (match && parseFloat(match[1]) > 0) {
-                        // 避免重复推入
-                        if(!state.permitParams.standards.some(s => s.factor === kw)) {
-                            state.permitParams.standards.push({
-                                category: category, loc: '全厂/各排口', factor: kw, limit: match[1], unit: defaultUnit
-                            });
-                            // 默认生成频次骨架
-                            state.permitParams.frequencies.push({
-                                category: category, factor: kw, freq: '手动填写'
-                            });
-                        }
+            // 尽力尝试扫描常见因子
+            const scanFactors = [
+                { cat: '废水', factors: ['COD', '化学需氧量', '氨氮', '总磷', '总氮', 'pH', '悬浮物'], defaultUnit: 'mg/L' },
+                { cat: '废气', factors: ['非甲烷总烃', '颗粒物', '二氧化硫', '氮氧化物', '硫酸雾'], defaultUnit: 'mg/m³' },
+                { cat: '噪声', factors: ['昼间', '夜间'], defaultUnit: 'dB' }
+            ];
+
+            scanFactors.forEach(group => {
+                group.factors.forEach(fac => {
+                    if(permitText.includes(fac)) {
+                        // 寻找附近的数字
+                        const reg = new RegExp(`${fac}[^\\n]*?(\\d+(?:\\.\\d+)?)`);
+                        const match = permitText.match(reg);
+                        let limit = match ? match[1] : '';
+                        state.permitParams.standards.push({ category: group.cat, loc: '全厂排口', factor: fac, limit: limit, unit: group.defaultUnit });
                     }
                 });
-            };
+            });
 
-            parseEnvFactor('废气', envDict.gas, 'mg/m3');
-            parseEnvFactor('废水', envDict.water, 'mg/L');
-            
-            // 针对噪声特殊处理
-            if(permitText.includes('噪声') || permitText.includes('厂界')) {
-                state.permitParams.standards.push({ category: '噪声', loc: '厂界四周', factor: '昼间', limit: '65', unit: 'dB' });
-                state.permitParams.standards.push({ category: '噪声', loc: '厂界四周', factor: '夜间', limit: '55', unit: 'dB' });
-            }
-
-            // 如果OCR太惨完全没匹配到，给兜底空白数据供手动填
+            // 如果OCR太惨完全没匹配到，给空白占位行
             if(state.permitParams.standards.length === 0) {
-                state.permitParams.standards.push({ category: '废气', loc: '', factor: '', limit: '', unit: '' });
-                state.permitParams.frequencies.push({ category: '废气', factor: '', freq: '' });
+                state.permitParams.standards.push({ category: '废气', loc: '未定', factor: '请填写', limit: '0', unit: '-' });
             }
 
-            state.isPermitLoaded = true;
             updateStep(2);
             renderPermitTab();
         });
 
+        // 渲染许可台账，并提供增删功能
         function renderPermitTab() {
-            const renderTable = (data, fields, headers) => `
-                <table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
-                <tbody>${data.map((row, i) => `<tr>${fields.map(f => `
-                    <td contenteditable="true" onblur="savePermit('${data === state.permitParams.standards ? 'standards' : 'frequencies'}', ${i}, '${f}', this.innerText)">${row[f] || ''}</td>
-                `).join('')}</tr>`).join('')}</tbody></table>
+            const html = `
+                <div class="section-title">
+                    <span>污染物排放执行标准 (生成报表骨架的核心，请务必核对补全)</span>
+                    <button class="action-btn" onclick="addPermitRow('standards')">＋ 手动新增一行污染因子</button>
+                </div>
+                <div class="table-wrap">
+                    <table id="stdTable">
+                        <thead><tr><th width="15%">类别 (下拉选择)</th><th>排口/位置</th><th>监测因子</th><th>标准限值</th><th>单位</th><th width="8%">操作</th></tr></thead>
+                        <tbody>
+                            ${state.permitParams.standards.map((row, i) => `
+                                <tr>
+                                    <td>
+                                        <select class="inline-sel" onchange="savePermit('standards', ${i}, 'category', this.value)">
+                                            <option value="废气" ${row.category==='废气'?'selected':''}>废气</option>
+                                            <option value="废水" ${row.category==='废水'?'selected':''}>废水</option>
+                                            <option value="噪声" ${row.category==='噪声'?'selected':''}>噪声</option>
+                                        </select>
+                                    </td>
+                                    <td contenteditable="true" onblur="savePermit('standards', ${i}, 'loc', this.innerText)">${row.loc}</td>
+                                    <td contenteditable="true" onblur="savePermit('standards', ${i}, 'factor', this.innerText)" style="font-weight:bold;">${row.factor}</td>
+                                    <td contenteditable="true" class="limit-cell" onblur="savePermit('standards', ${i}, 'limit', this.innerText)">${row.limit}</td>
+                                    <td contenteditable="true" onblur="savePermit('standards', ${i}, 'unit', this.innerText)">${row.unit}</td>
+                                    <td><span class="del-btn" onclick="delPermitRow('standards', ${i})" title="删除此行">×</span></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
-            
-            document.getElementById('permitContent').innerHTML = `
-                <div class="section-title">排污许可限值 (已基于全文OCR提取，请修正遗漏)</div>
-                <div class="table-wrap">${renderTable(state.permitParams.standards, ['category', 'loc', 'factor', 'limit', 'unit'], ['类别', '排口/位置', '监测因子', '识别限值', '单位'])}</div>
-                <div class="section-title">自行监测频次一览</div>
-                <div class="table-wrap">${renderTable(state.permitParams.frequencies, ['category', 'factor', 'freq'], ['类别', '监测对象', '频次 (如:季检/半年检)'])}</div>
-            `;
+            document.getElementById('permitContent').innerHTML = html;
+            // 每次变更骨架，同步清空重绘数据表
+            rebuildMonitoringSkeletons(); 
         }
 
-        window.savePermit = function(table, index, field, value) { state.permitParams[table][index][field] = value.trim(); };
+        window.savePermit = function(table, index, field, value) { 
+            state.permitParams[table][index][field] = value.trim(); 
+            rebuildMonitoringSkeletons();
+        };
 
-        // ================= 5. 业务二：报告解析与全自动数值填报 =================
+        window.addPermitRow = function(table) {
+            state.permitParams[table].push({ category: '废气', loc: '新增排口', factor: '新增因子', limit: '0', unit: 'mg/m³' });
+            renderPermitTab();
+        };
+
+        window.delPermitRow = function(table, index) {
+            state.permitParams[table].splice(index, 1);
+            renderPermitTab();
+        };
+
+        // ================= 5. 监测报告批量解析与自动填表 =================
+        // 重建各年份的数据骨架，严格基于当前 Permit 的配置
+        function rebuildMonitoringSkeletons() {
+            state.monitoringData = { gas: {}, water: {}, noise: {} };
+            state.targetYears.forEach(year => {
+                ['gas', 'water', 'noise'].forEach(catKey => state.monitoringData[catKey][year] = []);
+                
+                state.permitParams.standards.forEach(std => {
+                    let catKey = std.category === '废气' ? 'gas' : (std.category === '废水' ? 'water' : 'noise');
+                    state.monitoringData[catKey][year].push({
+                        id: `${catKey}_${year}_${Date.now()}_${Math.random()}`,
+                        loc: std.loc, factor: std.factor, limit: std.limit, unit: std.unit, vals: ['','','','']
+                    });
+                });
+            });
+            renderMonitoringTables(); // 立即渲染空表
+        }
+
         document.getElementById('reportInput').addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
             if(files.length === 0) return;
@@ -310,63 +351,40 @@
 
             for (let file of files) {
                 addPDFToViewer(file);
-                // 逐个文件全量 OCR
                 const reportText = await fullTextOcrProcess(file);
                 
-                // --- 1. 元数据增强识别 ---
-                let dateMatch = reportText.match(/(?:日期|时间)\s*[:：]?\s*(20\d{2})\s*[-年/.]\s*(\d{1,2})\s*[-月/.]\s*(\d{1,2})/);
-                let codeMatch = reportText.match(/(?:编号|NO\.|No\.)\s*[:：]?\s*([A-Za-z0-9\-\_]{8,25})/i);
-                let unitMatch = reportText.match(/([\u4e00-\u9fa5]{2,15}(?:检测|测试|检验|监测|评价))/);
+                // 元数据正则提取增强
+                let dateMatch = reportText.match(/(?:日期|时间)\s*[:：]?\s*(20\d{2})\s*[-年/.]\s*(\d{1,2})\s*[-月/.]\s*(\d{1,2})/) || reportText.match(/(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})/);
+                let codeMatch = reportText.match(/(?:报告编号|编号|No\.|NO\.)\s*[:：]?\s*([A-Za-z0-9\_]{6,25})/i);
+                let unitMatch = reportText.match(/([\u4e00-\u9fa5]{4,20}(?:检测|监测|测试|检验|技术))/);
 
-                const year = dateMatch ? dateMatch[1] : '2023'; 
+                const year = dateMatch ? dateMatch[1] : '2024'; 
                 const month = dateMatch ? parseInt(dateMatch[2]) : 1;
-                const fullDate = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : '待补全';
-                const code = codeMatch ? codeMatch[1] : '未知编号';
-                const unit = unitMatch ? unitMatch[1] : '未知机构';
+                const qtsIndex = Math.ceil(month / 3) - 1; // 季度索引 0-3
                 
-                let cats = [];
-                if(envDict.gas.some(k => reportText.includes(k))) cats.push('废气');
-                if(envDict.water.some(k => reportText.includes(k))) cats.push('废水');
-                if(envDict.noise.some(k => reportText.includes(k))) cats.push('噪声');
-
-                state.reports.push({ id: Date.now()+Math.random(), year, month, date: fullDate, code, unit, categories: cats.join('、') || '综合' });
-
-                // --- 2. 自动构建表格骨架 ---
-                const qts = Math.ceil(month / 3) - 1; // 0,1,2,3 对应四个季度列索引
-                state.targetYears.forEach(y => {
-                    ['废气', '废水', '噪声'].forEach((catName, idx) => {
-                        const catKey = ['gas', 'water', 'noise'][idx];
-                        if(cats.includes(catName)) {
-                            if(!state.monitoringData[catKey][y]) state.monitoringData[catKey][y] = [];
-                            // 如果该年无数据，根据排污许可初始化
-                            if(state.monitoringData[catKey][y].length === 0) {
-                                state.permitParams.standards.filter(s => s.category === catName).forEach(s => {
-                                    state.monitoringData[catKey][y].push({
-                                        id: `${catKey}_${y}_${Date.now()}_${Math.random()}`,
-                                        loc: s.loc, factor: s.factor, limit: s.limit, unit: s.unit, vals: ['','','','']
-                                    });
-                                });
-                            }
-                        }
-                    });
+                state.reports.push({ 
+                    id: Date.now(), year, 
+                    date: dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : '未捕捉', 
+                    code: codeMatch ? codeMatch[1] : '未捕捉', 
+                    unit: unitMatch ? unitMatch[1] : '未捕捉' 
                 });
 
-                // --- 3. 终极奥义：根据报告全文，静默提取数值填入表格 ---
+                // 核心：基于当前内存中的骨架，去全文中找数据
                 ['gas', 'water', 'noise'].forEach(catKey => {
                     const rows = state.monitoringData[catKey][year] || [];
                     rows.forEach(row => {
-                        if (!row.factor) return;
+                        if (!row.factor || row.factor === '新增因子') return;
                         
-                        // 在全文中寻找该因子，提取紧跟其后的数值 (支持 <0.05, ND 等)
-                        // 逻辑：匹配因子名称，跳过空白/非数字字符，抓取第一个遇到的数值/ND/<符号
-                        const valReg = new RegExp(`${row.factor}[^\\n\\d]*?([<≤]?\\d+(?:\\.\\d+)?|ND|未检出)`, 'i');
-                        const valMatch = reportText.match(valReg);
+                        // 正则：寻找该因子，捕获紧跟其后的数值 (包括 <, ND 等)
+                        // 逻辑：匹配因子名 -> 跨越空格、换行或冒号 -> 捕获数字或特定符号
+                        const valReg = new RegExp(`${row.factor}[^\\d<N未]*?([<≤]?\\d+(?:\\.\\d+)?|ND|未检出)`, 'i');
+                        const match = reportText.match(valReg);
                         
-                        if (valMatch) {
-                            // 如果找到了数值，且目标季度单元格为空，则自动填入
-                            if(!row.vals[qts]) {
-                                row.vals[qts] = valMatch[1];
-                                row.autoFilled = true; // 标记，用于UI绿色闪烁提示
+                        if (match) {
+                            // 仅在目标季度为空时填入，避免覆盖人工修改过的值
+                            if (!row.vals[qtsIndex]) {
+                                row.vals[qtsIndex] = match[1];
+                                row.autoFilled = true; // 触发 UI 绿色闪烁
                             }
                         }
                     });
@@ -374,20 +392,24 @@
             }
             
             renderSourceTable();
-            renderAllMonitoringTables();
+            renderMonitoringTables();
         });
 
         function renderSourceTable() {
             const tbody = document.getElementById('sourceBody');
             if(state.reports.length === 0) return;
-            tbody.innerHTML = [...state.reports].sort((a,b) => a.year - b.year || a.month - b.month).map(r => `
-                <tr><td contenteditable="true">${r.year}</td><td contenteditable="true">${r.categories}</td>
-                <td contenteditable="true">${r.unit}</td><td contenteditable="true">${r.date}</td><td contenteditable="true">${r.code}</td></tr>
+            tbody.innerHTML = [...state.reports].sort((a,b) => a.year - b.year).map(r => `
+                <tr>
+                    <td contenteditable="true">${r.year}</td>
+                    <td contenteditable="true">${r.unit}</td>
+                    <td contenteditable="true">${r.date}</td>
+                    <td contenteditable="true">${r.code}</td>
+                </tr>
             `).join('');
         }
 
-        // ================= 6. 数据中心与状态防覆盖渲染 =================
-        function renderAllMonitoringTables() {
+        // ================= 6. 监测表格渲染与逻辑判定 =================
+        function renderMonitoringTables() {
             renderTab('gas', '废气', 'gasContent');
             renderTab('water', '废水', 'waterContent');
             renderTab('noise', '噪声', 'noiseContent');
@@ -395,7 +417,6 @@
 
         function renderTab(catKey, catName, containerId) {
             const container = document.getElementById(containerId);
-            if(!state.isPermitLoaded || state.reports.length === 0) return;
             
             let html = '';
             state.targetYears.forEach(year => {
@@ -403,12 +424,12 @@
                 if(rows.length === 0) return;
                 
                 html += `
-                <div class="section-title">${year}年 ${catName}排放数据 (数值由AI静默提取，请人工复核)</div>
+                <div class="section-title">${year}年 ${catName}排放数据 (AI自动填入，人工复核)</div>
                 <div class="table-wrap">
                     <table>
                         <thead>
                             <tr><th width="15%">排口位置</th><th width="15%">监测因子</th><th width="8%">单位</th><th width="8%">限值</th>
-                            <th>Q1(一季度)</th><th>Q2(二季度)</th><th>Q3(三季度)</th><th>Q4(四季度)</th><th width="10%">自动判定</th></tr>
+                            <th>Q1(一季度)</th><th>Q2(二季度)</th><th>Q3(三季度)</th><th>Q4(四季度)</th><th width="10%">达标判定</th></tr>
                         </thead>
                         <tbody>
                             ${rows.map(row => `
@@ -425,7 +446,7 @@
                     </table>
                 </div>`;
             });
-            container.innerHTML = html || `<div class="empty-state">本年度暂无关联${catName}数据</div>`;
+            container.innerHTML = html || `<div class="empty-state">请先在排污许可台账中添加${catName}相关因子</div>`;
             document.querySelectorAll('#' + containerId + ' td[contenteditable="true"]').forEach(td => checkCompliance(td));
         }
 
@@ -436,11 +457,10 @@
         window.saveVal = function(c,y,id,idx,el) { 
             const row = state.monitoringData[c][y].find(r=>r.id===id);
             row.vals[idx] = el.innerText.trim(); 
-            row.autoFilled = false; // 手动修改后取消绿色闪烁标记
+            row.autoFilled = false; // 取消动效
             checkCompliance(el); 
         };
 
-        // 智能达标判定
         function checkCompliance(cell) {
             const row = cell.parentElement;
             const limit = parseFloat(row.querySelector('.limit-cell').innerText);
@@ -448,24 +468,20 @@
             
             let isOk = true, hasData = false;
             for(let i=4; i<=7; i++) {
-                const cell = row.cells[i];
-                const val = cell.innerText.trim().toUpperCase();
-                cell.classList.remove('non-compliant');
+                const td = row.cells[i];
+                const val = td.innerText.trim().toUpperCase();
+                td.classList.remove('non-compliant');
                 if(!val) continue;
                 hasData = true;
-                // 豁免条件
                 if(val.includes('<') || val.includes('ND') || val.includes('未检出')) continue;
-                // 判断超标
-                if(parseFloat(val) > limit) { isOk = false; cell.classList.add('non-compliant'); }
+                if(parseFloat(val) > limit) { isOk = false; td.classList.add('non-compliant'); }
             }
             const status = row.querySelector('.status-cell');
-            if(!hasData) { status.innerText = '-'; status.style.color = 'var(--locked)'; }
+            if(!hasData) { status.innerText = '-'; status.style.color = 'var(--locked)'; status.style.backgroundColor = 'transparent';}
             else { 
                 status.innerText = isOk ? '✅ 达标' : '❌ 超标'; 
                 status.style.color = isOk ? 'var(--success)' : 'white'; 
-                if(!isOk) status.style.backgroundColor = 'var(--danger)';
-                else status.style.backgroundColor = 'transparent';
-                status.style.fontWeight = 'bold';
+                status.style.backgroundColor = isOk ? 'transparent' : 'var(--danger)';
             }
         }
     </script>
