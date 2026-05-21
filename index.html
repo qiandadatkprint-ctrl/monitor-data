@@ -3,71 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企业监测数据核查与汇总系统</title>
+    <title>企业环保监测数据智能台账系统</title>
     <style>
-        :root { --primary: #0f766e; --bg: #f8fafc; --border: #cbd5e1; --text: #334155; --danger: #ef4444; }
+        :root { --primary: #0f766e; --bg: #f8fafc; --border: #cbd5e1; --text: #334155; --danger: #ef4444; --success: #10b981;}
         body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 10px; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; }
         
         /* 顶部控制台 */
-        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 10px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
         .header-title { font-size: 16px; font-weight: bold; color: var(--primary); margin: 0; }
-        
         .pdf-controls { display: flex; align-items: center; gap: 10px; }
         select, input[type="file"], input[type="text"] { padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
-        button { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        button { background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; transition: 0.2s; font-weight: 500;}
         button:hover { opacity: 0.9; }
-        button.danger { background: var(--danger); }
-
+        
         /* 主体布局 */
         .main { display: flex; gap: 10px; flex: 1; min-height: 0; }
         
-        /* 左侧 PDF 模块 */
-        .pdf-panel { width: 40%; background: white; border-radius: 6px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-        .panel-header { background: #f1f5f9; padding: 8px 12px; font-size: 13px; font-weight: bold; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+        /* 左侧 PDF */
+        .pdf-panel { width: 45%; background: white; border-radius: 6px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
+        .panel-header { background: #f1f5f9; padding: 8px 12px; font-size: 13px; font-weight: bold; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; color: #475569;}
         iframe { flex: 1; border: none; width: 100%; background: #64748b; }
 
-        /* 右侧 数据处理模块 */
-        .data-panel { width: 60%; background: white; border-radius: 6px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        /* 右侧 数据区 */
+        .data-panel { width: 55%; background: white; border-radius: 6px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);}
         
         /* 标签页 */
         .tabs { display: flex; background: #f1f5f9; border-bottom: 1px solid var(--border); }
-        .tab { padding: 10px 15px; font-size: 14px; cursor: pointer; border-right: 1px solid var(--border); font-weight: 500; }
+        .tab { padding: 10px 15px; font-size: 14px; cursor: pointer; border-right: 1px solid var(--border); font-weight: bold; color: #64748b; transition: 0.2s;}
+        .tab:hover { background: #e2e8f0; }
         .tab.active { background: white; color: var(--primary); border-bottom: 2px solid var(--primary); }
-        
         .tab-content { flex: 1; overflow-y: auto; padding: 15px; display: none; }
         .tab-content.active { display: block; }
 
-        /* 全局年份控制 */
+        /* 年份与 OCR 区 */
         .year-control { margin-bottom: 15px; padding: 10px; background: #f8fafc; border: 1px dashed var(--border); border-radius: 4px; display: flex; gap: 10px; align-items: center; font-size: 13px; }
-        .year-tag { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+        .year-tag { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px;}
+        .year-tag span.del { color: #0284c7; cursor: pointer; font-size: 14px; }
+        .year-tag span.del:hover { color: var(--danger); }
 
-        /* 输入区 */
-        textarea { width: 100%; height: 80px; padding: 8px; border: 1px solid var(--border); border-radius: 4px; resize: vertical; box-sizing: border-box; margin-bottom: 5px; font-family: monospace; font-size: 12px; }
+        .ocr-zone { border: 2px dashed #0ea5e9; background: #f0f9ff; padding: 25px; border-radius: 6px; text-align: center; margin-bottom: 15px; transition: 0.3s; }
+        .ocr-zone p { margin: 0 0 8px 0; color: #0369a1; font-weight: bold; font-size: 16px; }
+        .ocr-zone span { font-size: 12px; color: #64748b; }
         
-        /* 解析记录卡片 */
-        .record-list { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 15px; }
-        .record-tag { background: #f1f5f9; border: 1px solid var(--border); font-size: 12px; padding: 2px 8px; border-radius: 4px; display: flex; align-items: center; gap: 5px; }
-        .record-tag span.del { color: var(--danger); cursor: pointer; font-weight: bold; }
+        textarea { width: 100%; height: 80px; padding: 8px; border: 1px solid var(--border); border-radius: 4px; resize: vertical; box-sizing: border-box; margin-bottom: 5px; font-family: monospace; font-size: 12px; background: #f8fafc;}
+        
+        /* 台账记录 */
+        .record-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
+        .record-item { background: #f1f5f9; border: 1px solid var(--border); font-size: 13px; padding: 6px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .record-item .info { display: flex; gap: 15px; }
+        .record-item span.del { color: var(--danger); cursor: pointer; font-weight: bold; font-size: 14px; }
 
-        /* 表格样式 */
+        /* 表格通用样式 */
         .table-wrap { overflow-x: auto; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; }
-        th, td { border: 1px solid var(--border); padding: 6px; }
-        th { background: #f8fafc; font-weight: bold; }
-        td[contenteditable="true"] { background: #fffdf5; outline: none; }
-        td[contenteditable="true"]:focus { box-shadow: inset 0 0 0 2px #fde047; }
+        th, td { border: 1px solid var(--border); padding: 8px 4px; }
+        th { background: #f8fafc; font-weight: bold; color: #334155;}
+        td[contenteditable="true"] { background: #fffdf5; transition: 0.2s;}
+        td[contenteditable="true"]:hover { background: #fef9c3; cursor: text; }
+        td[contenteditable="true"]:focus { background: #fef08a; outline: 2px solid #eab308; }
         .non-compliant { color: white; background-color: var(--danger) !important; font-weight: bold; }
+        .section-title { font-size: 14px; font-weight: bold; margin: 15px 0 10px 0; border-left: 3px solid var(--primary); padding-left: 8px; background: #f1f5f9; padding-top: 4px; padding-bottom: 4px;}
         
-        .section-title { font-size: 14px; font-weight: bold; margin: 15px 0 10px 0; border-left: 3px solid var(--primary); padding-left: 8px; }
+        /* 操作按钮 */
+        .action-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+        .btn-add-row { background: transparent; color: var(--primary); border: 1px dashed var(--primary); width: 100%; }
+        .btn-add-row:hover { background: #f0fdfa; color: #0f766e; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1 class="header-title">📊 监测数据智能提取与汇总工作台</h1>
+        <h1 class="header-title">📊 监测数据提取与核查系统</h1>
         <div class="pdf-controls">
-            <span style="font-size: 13px;">PDF文件库：</span>
-            <input type="file" id="pdfInput" accept="application/pdf" multiple>
+            <span style="font-size: 13px; font-weight: bold;">原文留存对照区：</span>
+            <input type="file" id="pdfInput" accept="application/pdf" multiple title="支持多选文件">
             <select id="pdfSelector" onchange="switchPDF()">
                 <option value="">-- 当前未选择文件 --</option>
             </select>
@@ -77,55 +86,50 @@
     <div class="main">
         <div class="pdf-panel">
             <div class="panel-header">
-                <span>📄 原文对照区</span>
-                <span id="pdfNameDisplay" style="color:#64748b; font-weight:normal;"></span>
+                <span>📄 PDF 原文对照 (截图区)</span>
+                <span id="pdfNameDisplay" style="font-weight:normal; font-size: 12px;"></span>
             </div>
             <iframe id="pdfViewer"></iframe>
         </div>
 
         <div class="data-panel">
             <div class="tabs">
-                <div class="tab active" onclick="switchTab('tab-import')">📥 数据导入与解析</div>
-                <div class="tab" onclick="switchTab('tab-gas')">💨 废气汇总</div>
-                <div class="tab" onclick="switchTab('tab-water')">💧 废水汇总</div>
-                <div class="tab" onclick="switchTab('tab-noise')">🔊 噪声汇总</div>
+                <div class="tab active" onclick="switchTab('tab-import')">📥 数据录入与台账</div>
+                <div class="tab" onclick="switchTab('tab-gas')">💨 废气监测汇总</div>
+                <div class="tab" onclick="switchTab('tab-water')">💧 废水监测汇总</div>
+                <div class="tab" onclick="switchTab('tab-noise')">🔊 噪声监测汇总</div>
                 <div class="tab" onclick="switchTab('tab-source')">📋 数据来源表</div>
             </div>
 
             <div id="tab-import" class="tab-content active">
                 <div class="year-control">
                     <span><b>全局统计年份：</b></span>
-                    <div id="yearList" style="display:inline-flex; gap:5px;"></div>
-                    <input type="text" id="newYear" placeholder="如 2024" style="width:60px;">
-                    <button onclick="addYear()">添加年份</button>
+                    <div id="yearList" style="display:inline-flex; gap:5px; flex-wrap: wrap;"></div>
+                    <input type="text" id="newYear" placeholder="如 2024" style="width:60px;" onkeypress="if(event.keyCode==13) addYear()">
+                    <button onclick="addYear()" style="padding: 4px 10px;">添加</button>
                 </div>
 
-                <div class="section-title">1. 粘贴排污许可证/标准限值 (OCR提取)</div>
-                <textarea id="permitText" placeholder="粘贴排污许可中的执行标准与频次..."></textarea>
-                <button onclick="parsePermit()">解析标准与频次</button>
+                <div class="ocr-zone" id="ocrZone">
+                    <p>⚡ 极速录入：截图后，在此处按 Ctrl + V 粘贴</p>
+                    <span id="ocrStatus">需确保后台已运行 Umi-OCR 并开启 HTTP 接口 (端口1224)</span>
+                </div>
 
-                <div class="section-title" style="margin-top:20px;">2. 粘贴企业自行监测报告 (OCR提取)</div>
-                <textarea id="reportText" placeholder="粘贴监测报告正文（需包含报告编号、签发日期、监测单位及数据表格）..."></textarea>
-                <button onclick="parseReport()">自动识别并入库</button>
+                <div class="section-title">识别结果核对区</div>
+                <textarea id="reportText" placeholder="Umi-OCR 识别出的文字将显示在此处。若无 Umi-OCR，也可手动复制外部文本粘贴至此。确认无误后点击下方按钮解析入库。"></textarea>
+                <button onclick="parseReport()" style="width: 100%; padding: 10px; font-size: 14px; background: #0ea5e9; margin-bottom: 15px;">智能解析并存入来源台账</button>
                 
-                <div style="margin-top: 15px; font-size: 13px;"><b>已入库的监测报告台账：</b></div>
+                <div class="section-title">报告台账库 (已录入)</div>
                 <div class="record-list" id="reportLedger">
-                    </div>
+                    <div style="color: #94a3b8; font-size: 12px; text-align: center; padding: 10px;">暂无报告入库</div>
+                </div>
             </div>
 
-            <div id="tab-gas" class="tab-content">
-                <div id="gasTablesContainer">请先在“数据导入”页配置年份并导入数据。</div>
-            </div>
-
-            <div id="tab-water" class="tab-content">
-                <div id="waterTablesContainer">请先在“数据导入”页配置年份并导入数据。</div>
-            </div>
-
-            <div id="tab-noise" class="tab-content">
-                <div id="noiseTablesContainer">请先在“数据导入”页配置年份并导入数据。</div>
-            </div>
-
+            <div id="tab-gas" class="tab-content"><div id="gasTablesContainer"></div></div>
+            <div id="tab-water" class="tab-content"><div id="waterTablesContainer"></div></div>
+            <div id="tab-noise" class="tab-content"><div id="noiseTablesContainer"></div></div>
+            
             <div id="tab-source" class="tab-content">
+                <div class="section-title">数据来源汇总一览表</div>
                 <div class="table-wrap">
                     <table id="sourceTable">
                         <thead>
@@ -139,108 +143,179 @@
     </div>
 
     <script>
-        // ================= 全局状态管理 =================
+        // ================= 1. 核心状态管理 =================
         const state = {
-            pdfs: [], 
-            years: ['2021', '2022', '2023'],
-            reports: [], // { id, year, month, unit, code, text, rawData }
-            standards: [] // { factor, limit, unit }
+            pdfs: [],
+            years: ['2021', '2022', '2023'], // 默认初始化年份
+            reports: [] // 存储解析出的报告元数据
         };
 
-        // ================= 1. UI 交互与 PDF 管理 =================
+        // ================= 2. UI 交互与 PDF 留存逻辑 =================
         function switchTab(tabId) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             event.target.classList.add('active');
             document.getElementById(tabId).classList.add('active');
-            if(tabId !== 'tab-import') renderTables(); // 切换标签时重新渲染表格
+            
+            // 切换标签时重新渲染对应图表
+            if (['tab-gas', 'tab-water', 'tab-noise'].includes(tabId)) {
+                renderMonitoringTables();
+            } else if (tabId === 'tab-source') {
+                renderSourceTable();
+            }
         }
 
         const pdfInput = document.getElementById('pdfInput');
         const pdfSelector = document.getElementById('pdfSelector');
-        const pdfViewer = document.getElementById('pdfViewer');
-
-        pdfInput.addEventListener('change', function(e) {
-            const files = Array.from(e.target.files);
-            files.forEach(file => {
+        
+        pdfInput.addEventListener('change', e => {
+            Array.from(e.target.files).forEach(file => {
                 const url = URL.createObjectURL(file);
                 state.pdfs.push({ name: file.name, url: url });
                 const option = document.createElement('option');
-                option.value = url;
+                option.value = url; 
                 option.text = file.name;
                 pdfSelector.appendChild(option);
             });
-            if(state.pdfs.length > 0) {
-                pdfSelector.value = state.pdfs[state.pdfs.length - 1].url;
-                switchPDF();
+            if (state.pdfs.length > 0) { 
+                pdfSelector.value = state.pdfs[state.pdfs.length - 1].url; 
+                switchPDF(); 
             }
         });
 
-        function switchPDF() {
-            const selectedUrl = pdfSelector.value;
-            if (selectedUrl) {
-                pdfViewer.src = selectedUrl;
-                document.getElementById('pdfNameDisplay').innerText = pdfSelector.options[pdfSelector.selectedIndex].text;
-            }
+        function switchPDF() { 
+            document.getElementById('pdfViewer').src = pdfSelector.value; 
+            document.getElementById('pdfNameDisplay').innerText = pdfSelector.options[pdfSelector.selectedIndex].text;
         }
 
-        // ================= 2. 年份管理 =================
+        // ================= 3. 年份动态管理 =================
         function renderYears() {
-            const list = document.getElementById('yearList');
-            list.innerHTML = state.years.map(y => `<span class="year-tag">${y}年</span>`).join('');
+            document.getElementById('yearList').innerHTML = state.years.map(y => `
+                <span class="year-tag">${y}年 <span class="del" onclick="deleteYear('${y}')" title="删除该年份">×</span></span>
+            `).join('');
+            renderMonitoringTables(); // 年份变化，触发报表重绘
         }
 
         function addYear() {
             const y = document.getElementById('newYear').value.trim();
-            if(y && !state.years.includes(y)) {
-                state.years.push(y);
-                state.years.sort();
-                renderYears();
-                document.getElementById('newYear').value = '';
+            if (y && !state.years.includes(y)) { 
+                state.years.push(y); 
+                state.years.sort(); 
+                renderYears(); 
+                document.getElementById('newYear').value = ''; 
             }
         }
 
-        // ================= 3. OCR 解析核心逻辑 =================
-        
-        // 简单模拟标准解析（实际业务中建议手动完善表格或在此强化正则）
-        function parsePermit() {
-            const text = document.getElementById('permitText').value;
-            if(!text) return alert("请粘贴文本");
-            alert("标准提取成功！(系统已自动缓存限值)");
-            document.getElementById('permitText').value = '';
+        function deleteYear(y) {
+            state.years = state.years.filter(year => year !== y);
+            renderYears();
         }
 
+        // ================= 4. 全局粘贴事件与 Umi-OCR 联动 =================
+        document.addEventListener('paste', async (e) => {
+            // 只有当焦点不在输入框时，才触发全局 OCR 粘贴，防止干扰正常文字复制
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                // 如果焦点在 reportText 内，依然允许正常粘贴文字
+                return; 
+            }
+
+            const items = e.clipboardData.items;
+            let imageItem = null;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) { imageItem = items[i]; break; }
+            }
+
+            if (!imageItem) return;
+
+            const blob = imageItem.getAsFile();
+            const reader = new FileReader();
+            const statusText = document.getElementById('ocrStatus');
+            const ocrZone = document.getElementById('ocrZone');
+            
+            ocrZone.style.borderColor = '#10b981';
+            ocrZone.style.backgroundColor = '#d1fae5';
+            statusText.innerText = "⏳ 正在呼叫本地 Umi-OCR 解析图片，请稍候...";
+            statusText.style.color = "var(--primary)";
+
+            reader.onload = async (event) => {
+                const base64Data = event.target.result.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+                try {
+                    const response = await fetch('http://127.0.0.1:1224/api/ocr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ base64: base64Data, options: { "tbpu.parser": "multi_column" } })
+                    });
+                    if (!response.ok) throw new Error("API Request Failed");
+                    const result = await response.json();
+                    
+                    if (result.code === 100 && result.data) {
+                        let textOut = result.data.map(item => item.text).join('\n');
+                        document.getElementById('reportText').value = textOut;
+                        statusText.innerText = "✅ 图片文字提取成功！请在下方核对。";
+                    } else {
+                        throw new Error("无有效文字");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    statusText.innerText = "❌ 未连接到 Umi-OCR，请检查后台运行状态及端口设置。";
+                    statusText.style.color = "var(--danger)";
+                    ocrZone.style.borderColor = 'var(--danger)';
+                    ocrZone.style.backgroundColor = '#fee2e2';
+                }
+            };
+            reader.readAsDataURL(blob);
+        });
+
+        // ================= 5. 数据清洗与来源台账汇编 =================
         function parseReport() {
             const text = document.getElementById('reportText').value.trim();
-            if(!text) return alert("请粘贴监测报告内容！");
+            if(!text) return alert("解析框内无文字，无法入库！");
 
-            // 智能提取元数据 (年份、日期、机构、编号)
-            let dateMatch = text.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
-            let codeMatch = text.match(/[A-Za-z0-9\-]{8,15}/); 
-            let unitMatch = text.match(/[\u4e00-\u9fa5]+检测[\u4e00-\u9fa5]*有限公司|[\u4e00-\u9fa5]+技术服务[\u4e00-\u9fa5]*有限公司/);
+            // 智能正则提取
+            let dateMatch = text.match(/(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日/);
+            let codeMatch = text.match(/[A-Za-z0-9\-\_]{8,20}/); // 报告编号通常包含字母数字和中划线
+            let unitMatch = text.match(/[\u4e00-\u9fa5]+检测[\u4e00-\u9fa5]*有限公司|[\u4e00-\u9fa5]+技术服务[\u4e00-\u9fa5]*有限公司|[\u4e00-\u9fa5]+环境监测站/);
 
-            const year = dateMatch ? dateMatch[1] : new Date().getFullYear().toString();
-            const month = dateMatch ? dateMatch[2] : '未知';
-            const fullDate = dateMatch ? dateMatch[0] : '提取失败';
+            const year = dateMatch ? dateMatch[1] : (new Date().getFullYear().toString());
+            const fullDate = dateMatch ? dateMatch[0] : '未知日期';
             const code = codeMatch ? codeMatch[0] : '未识别编号';
-            const unit = unitMatch ? unitMatch[0] : '未识别单位';
-
+            const unit = unitMatch ? unitMatch[0] : '未识别机构';
             const id = Date.now();
-            const recordName = `${year}年${month}月 (${code})`;
 
-            state.reports.push({ id, name: recordName, year, month, date: fullDate, code, unit, rawText: text });
+            state.reports.push({ id, year, date: fullDate, code, unit });
             
+            // 自动将提取到的年份加入全局年份池
+            if (!state.years.includes(year)) { addYearSilently(year); }
+
             renderLedger();
             document.getElementById('reportText').value = '';
-            alert(`✅ 成功解析并入库：\n报告日期：${fullDate}\n报告编号：${code}`);
+            
+            const statusText = document.getElementById('ocrStatus');
+            statusText.innerText = "✨ 数据已成功分析并归档，您可以继续截图录入下一份报告";
+            statusText.style.color = "#64748b";
+            document.getElementById('ocrZone').style.borderColor = '#0ea5e9';
+            document.getElementById('ocrZone').style.backgroundColor = '#f0f9ff';
+        }
+
+        function addYearSilently(y) {
+            state.years.push(y);
+            state.years.sort();
+            renderYears();
         }
 
         function renderLedger() {
             const ledger = document.getElementById('reportLedger');
+            if (state.reports.length === 0) {
+                ledger.innerHTML = '<div style="color: #94a3b8; font-size: 12px; text-align: center; padding: 10px;">暂无报告入库</div>';
+                return;
+            }
             ledger.innerHTML = state.reports.map(r => `
-                <div class="record-tag">
-                    📄 ${r.name} 
-                    <span class="del" onclick="deleteReport(${r.id})">×</span>
+                <div class="record-item">
+                    <div class="info">
+                        <span style="font-weight: bold; color: var(--primary);">📄 ${r.year}年报告</span>
+                        <span style="color: #64748b;">${r.unit} | ${r.date} | ${r.code}</span>
+                    </div>
+                    <span class="del" onclick="deleteReport(${r.id})" title="移除此报告">×</span>
                 </div>
             `).join('');
         }
@@ -250,100 +325,138 @@
             renderLedger();
         }
 
-        // ================= 4. 报表渲染与达标判定 =================
-        
-        // 通用建表逻辑 (适配 Word 模板的多级表头)
-        function buildTableHTML(year, type) {
-            let html = `<div class="section-title">${year}年 ${type}排放监测数据汇总</div>`;
-            html += `<div class="table-wrap"><table>`;
-            html += `<thead><tr>
-                        <th rowspan="2">排口/位置</th><th rowspan="2">监测因子</th><th rowspan="2">标准限值</th>
-                        <th colspan="4">${year}年 监测值 (点击可编辑)</th><th rowspan="2">达标情况</th>
-                     </tr><tr>
-                        <th>一季度</th><th>二季度</th><th>三季度</th><th>四季度</th>
-                     </tr></thead><tbody>`;
+        // ================= 6. 监测数据汇总表渲染与智能判定 =================
+        function renderMonitoringTables() {
+            document.getElementById('gasTablesContainer').innerHTML = state.years.map(y => buildMonitoringTableHTML(y, '废气')).join('');
+            document.getElementById('waterTablesContainer').innerHTML = state.years.map(y => buildMonitoringTableHTML(y, '废水')).join('');
+            document.getElementById('noiseTablesContainer').innerHTML = state.years.map(y => buildNoiseTableHTML(y)).join('');
             
-            // 预设占位行，真实业务中这里会遍历 state.reports 进行数据填充
-            // 为了演示判定逻辑，预设了几行数据
-            html += `
-                <tr>
-                    <td contenteditable="true">DA001</td>
-                    <td contenteditable="true">非甲烷总烃</td>
-                    <td contenteditable="true" class="limit-val">70</td>
-                    <td contenteditable="true" onblur="checkCompliance(this)">1.02</td>
-                    <td contenteditable="true" onblur="checkCompliance(this)">0.55</td>
-                    <td contenteditable="true" onblur="checkCompliance(this)">ND</td>
-                    <td contenteditable="true" onblur="checkCompliance(this)"></td>
-                    <td class="status-cell">达标</td>
-                </tr>
-                <tr>
-                    <td contenteditable="true">厂界</td>
-                    <td contenteditable="true">硫酸雾</td>
-                    <td contenteditable="true" class="limit-val">0.3</td>
-                    <td contenteditable="true" onblur="checkCompliance(this)"><0.005</td>
-                    <td contenteditable="true" onblur="checkCompliance(this)">0.45</td>
-                    <td contenteditable="true" onblur="checkCompliance(this)"></td>
-                    <td contenteditable="true" onblur="checkCompliance(this)"></td>
-                    <td class="status-cell">待定</td>
-                </tr>
-            `;
-            html += `</tbody></table></div>`;
-            return html;
-        }
-
-        function renderTables() {
-            let gasHtml = '', waterHtml = '', noiseHtml = '';
-            state.years.forEach(year => {
-                gasHtml += buildTableHTML(year, '废气');
-                waterHtml += buildTableHTML(year, '废水');
-                noiseHtml += buildTableHTML(year, '噪声');
-            });
-            document.getElementById('gasTablesContainer').innerHTML = gasHtml;
-            document.getElementById('waterTablesContainer').innerHTML = waterHtml;
-            document.getElementById('noiseTablesContainer').innerHTML = noiseHtml;
-            
-            // 渲染数据来源表
-            renderSourceTable();
-            // 初始化执行一次达标判定
+            // 初始化执行一次全局判定
             document.querySelectorAll('td[contenteditable="true"]').forEach(td => checkCompliance(td));
         }
 
-        // 核心：智能达标判定
+        // 废气/废水通用表格结构
+        function buildMonitoringTableHTML(year, type) {
+            const tId = `${type}-${year}`;
+            return `
+            <div class="section-title">${year}年 ${type}排放监测数据汇总表</div>
+            <div class="table-wrap">
+                <table id="${tId}">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">排口名称/编号</th><th rowspan="2">监测因子</th><th rowspan="2">单位</th><th rowspan="2">标准限值</th>
+                            <th colspan="4">${year}年 监测值 (直接粘贴文字或手动录入)</th><th rowspan="2" width="10%">达标情况</th>
+                        </tr>
+                        <tr>
+                            <th width="12%">一季度(或上半年)</th><th width="12%">二季度</th><th width="12%">三季度(或下半年)</th><th width="12%">四季度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td contenteditable="true">DA001</td><td contenteditable="true">非甲烷总烃</td><td contenteditable="true">mg/m3</td><td contenteditable="true" class="limit-val">70</td>
+                            <td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td>
+                            <td class="status-cell">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="action-row">
+                    <button class="btn-add-row" onclick="addEmptyRow('${tId}')">＋ 新增一行排口/因子</button>
+                </div>
+            </div>`;
+        }
+
+        // 噪声专用表格结构 (噪声有昼夜之分，且格式不同)
+        function buildNoiseTableHTML(year) {
+            const tId = `噪声-${year}`;
+            return `
+            <div class="section-title">${year}年 厂界环境噪声监测数据汇总表</div>
+            <div class="table-wrap">
+                <table id="${tId}">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">测点位置</th><th rowspan="2">噪音来源</th><th rowspan="2">时间段</th><th rowspan="2">标准限值<br>(dB)</th>
+                            <th colspan="4">${year}年 监测值 (dB)</th><th rowspan="2" width="10%">达标情况</th>
+                        </tr>
+                        <tr>
+                            <th width="12%">一季度</th><th width="12%">二季度</th><th width="12%">三季度</th><th width="12%">四季度</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td contenteditable="true" rowspan="2">东边界外1米</td><td contenteditable="true" rowspan="2">厂内设备环境</td><td style="background:#f8fafc;">昼间</td><td contenteditable="true" class="limit-val">65</td>
+                            <td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td>
+                            <td class="status-cell">-</td>
+                        </tr>
+                        <tr>
+                            <td style="background:#f8fafc;">夜间</td><td contenteditable="true" class="limit-val">55</td>
+                            <td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td>
+                            <td class="status-cell">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>`;
+        }
+
+        function addEmptyRow(tableId) {
+            const tbody = document.getElementById(tableId).querySelector('tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true" class="limit-val"></td>
+                <td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td><td contenteditable="true" onblur="checkCompliance(this)"></td>
+                <td class="status-cell">-</td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        // 核心功能：智能达标判定
         function checkCompliance(cell) {
             const row = cell.parentElement;
             const limitStr = row.querySelector('.limit-val').innerText.trim();
             const limit = parseFloat(limitStr);
-            if(isNaN(limit)) return;
+            
+            if (isNaN(limit)) {
+                // 如果没有写限值，无法判定，清空状态
+                row.querySelector('.status-cell').innerText = '-';
+                return;
+            }
 
             let isCompliant = true;
             let hasData = false;
 
-            // 遍历4个季度的格子
-            for(let i = 3; i <= 6; i++) {
-                const valStr = row.cells[i].innerText.trim().toUpperCase();
-                row.cells[i].classList.remove('non-compliant');
-                if(!valStr) continue;
+            // 针对废气废水表格，定位包含数据的单元格区间 (最后5列中前4列是数据)
+            const cellsCount = row.cells.length;
+            const dataStartIndex = cellsCount - 5;
+            const dataEndIndex = cellsCount - 2;
+
+            for (let i = dataStartIndex; i <= dataEndIndex; i++) {
+                const targetCell = row.cells[i];
+                const valStr = targetCell.innerText.trim().toUpperCase();
+                targetCell.classList.remove('non-compliant');
+                
+                if (!valStr) continue;
                 hasData = true;
 
-                // 识别检出限符号 <, ND, 未检出
-                if(valStr.includes('<') || valStr.includes('ND') || valStr.includes('未检出')) {
-                    continue; // 视为达标
+                // 智能豁免判定：检出限符号直接算达标
+                if (valStr.includes('<') || valStr.includes('ND') || valStr.includes('未检出') || valStr.includes('＜')) {
+                    continue; 
                 }
 
+                // 数值判定
                 const val = parseFloat(valStr);
-                if(!isNaN(val) && val > limit) {
+                if (!isNaN(val) && val > limit) {
                     isCompliant = false;
-                    row.cells[i].classList.add('non-compliant'); // 标红具体超标数值
+                    targetCell.classList.add('non-compliant'); // 精准标红超标数据格子
                 }
             }
 
             const statusCell = row.querySelector('.status-cell');
-            if(!hasData) {
+            if (!hasData) {
                 statusCell.innerText = '-';
                 statusCell.style.color = '#94a3b8';
-            } else if(isCompliant) {
+            } else if (isCompliant) {
                 statusCell.innerText = '达标';
-                statusCell.style.color = 'var(--primary)';
+                statusCell.style.color = 'var(--success)';
+                statusCell.style.fontWeight = 'bold';
             } else {
                 statusCell.innerText = '未达标';
                 statusCell.style.color = 'var(--danger)';
@@ -351,17 +464,21 @@
             }
         }
 
-        // 渲染数据来源台账
+        // ================= 7. 数据来源汇总表渲染 =================
         function renderSourceTable() {
             const tbody = document.getElementById('sourceBody');
             if(state.reports.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5">暂无解析数据</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="color: #94a3b8;">暂无检测报告归档，请在“数据录入”页面进行 OCR 解析入库。</td></tr>`;
                 return;
             }
-            tbody.innerHTML = state.reports.map(r => `
+            
+            // 按照年份排序
+            const sortedReports = [...state.reports].sort((a, b) => a.year - b.year);
+            
+            tbody.innerHTML = sortedReports.map(r => `
                 <tr>
                     <td>${r.year}</td>
-                    <td>有组织、无组织 (自动推断)</td>
+                    <td>有组织、无组织、废水</td>
                     <td>${r.unit}</td>
                     <td>${r.date}</td>
                     <td>${r.code}</td>
@@ -369,7 +486,7 @@
             `).join('');
         }
 
-        // 初始渲染
+        // 初始化
         renderYears();
     </script>
 </body>
